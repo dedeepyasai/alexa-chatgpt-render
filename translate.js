@@ -1,5 +1,5 @@
 const { Translate } = require('@google-cloud/translate').v2;
-const lip = require('lipitva');
+const { transliterate } = require('lipitva');
 
 const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
 
@@ -19,7 +19,7 @@ exports.toTelugu = async (text) => {
 };
 
 exports.toPhonetic = (teluguText) => {
-  return lip.t({
+  return transliterate({
     data: teluguText,
     from: 'telugu',
     to: 'itrans'
