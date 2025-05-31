@@ -10,7 +10,7 @@ const app = express();
 app.use(bodyParser.json());
 
 /**
- * ChatIntent: Translates Telugu to English → Gets ChatGPT reply → Translates back to Telugu
+ * ChatIntent: Translates Telugu → English → ChatGPT → English → Telugu (phonetic)
  */
 const ChatIntentHandler = {
   canHandle(handlerInput) {
@@ -20,12 +20,12 @@ const ChatIntentHandler = {
 
   async handle(handlerInput) {
     try {
-      const userInput = Alexa.getSlotValue(handlerInput.requestEnvelope, 'question') || 'హలో';
+      const userInput = Alexa.getSlotValue(handlerInput.requestEnvelope, 'question') || 'haayi';
 
       // Step 1: Telugu → English
       const englishInput = await toEnglish(userInput);
 
-      // Step 2: Ask ChatGPT
+      // Step 2: Send to OpenAI
       const gptResponse = await axios.post(
         'https://api.openai.com/v1/chat/completions',
         {
@@ -43,46 +43,48 @@ const ChatIntentHandler = {
       const englishOutput = gptResponse.data.choices[0].message.content;
 
       // Step 3: English → Telugu
-      const teluguOutput = await toTelugu(englishOutput);
+      const teluguScript = await toTelugu(englishOutput);
 
-      // Step 4: Speak and show result
+      // Step 4: Use phonetic fallback (for now, use Telugu script inside en-IN)
+      const phoneticTelugu = teluguScript; // optionally replace with transliteration logic
+
       return handlerInput.responseBuilder
-        .speak(`<speak><lang xml:lang="en-IN">${teluguOutput}</lang></speak>`)
-        .reprompt("ఇంకా ఏమైనా అడగాలా?")
-        .withSimpleCard("Chitti", teluguOutput)
+        .speak(`<speak><lang xml:lang="en-IN">${phoneticTelugu}</lang></speak>`)
+        .reprompt("inkaa emina adugutaaru?")
+        .withSimpleCard("Chitti", phoneticTelugu)
         .getResponse();
 
     } catch (err) {
       console.error("❌ ChatIntent Error:", err.message);
-      const errorMsg = "క్షమించండి, ఏదో లోపం సంభవించింది. దయచేసి మళ్లీ ప్రయత్నించండి.";
+      const fallback = "kshaminchandi, edo lopam jarigindi. malli try cheyyandi.";
       return handlerInput.responseBuilder
-        .speak(`<speak><lang xml:lang="en-IN">${errorMsg}</lang></speak>`)
-        .reprompt("మరొక ప్రశ్న అడగాలా?")
-        .withSimpleCard("Chitti - లోపం", errorMsg)
+        .speak(`<speak><lang xml:lang="en-IN">${fallback}</lang></speak>`)
+        .reprompt("malli try cheyyandi.")
+        .withSimpleCard("Chitti - Lopam", fallback)
         .getResponse();
     }
   }
 };
 
 /**
- * LaunchRequest: First time the skill is opened
+ * LaunchRequest: First time skill is opened
  */
 const LaunchRequestHandler = {
   canHandle(handlerInput) {
     return Alexa.getRequestType(handlerInput.requestEnvelope) === 'LaunchRequest';
   },
   handle(handlerInput) {
-    const message = "హాయ్! నేను చిట్టి. మీరు ఏం తెలుసుకోవాలనుకుంటున్నారు?";
+    const welcome = "haayi! nenu chitti. meeru em telusukovaalanukuntunnaru?";
     return handlerInput.responseBuilder
-      .speak(`<speak><lang xml:lang="en-IN">${message}</lang></speak>`)
-      .reprompt("మీరు ఏదైనా అడగవచ్చును.")
-      .withSimpleCard("Chitti", message)
+      .speak(`<speak><lang xml:lang="en-IN">${welcome}</lang></speak>`)
+      .reprompt("meeru emi adagavacchu.")
+      .withSimpleCard("Chitti", welcome)
       .getResponse();
   }
 };
 
 /**
- * ErrorHandler: Catches any unhandled errors
+ * ErrorHandler: Handles unhandled exceptions
  */
 const ErrorHandler = {
   canHandle() {
@@ -90,17 +92,17 @@ const ErrorHandler = {
   },
   handle(handlerInput, error) {
     console.error("🔥 General Error:", error.message);
-    const teluguError = "క్షమించండి, లోపం సంభవించింది. దయచేసి మళ్లీ ప్రయత్నించండి.";
+    const errorMessage = "kshaminchandi, lopam sambhavinchindi. malli try cheyyandi.";
     return handlerInput.responseBuilder
-      .speak(`<speak><lang xml:lang="en-IN">${teluguError}</lang></speak>`)
-      .reprompt("మరొక ప్రశ్న అడగాలా?")
-      .withSimpleCard("Chitti - లోపం", teluguError)
+      .speak(`<speak><lang xml:lang="en-IN">${errorMessage}</lang></speak>`)
+      .reprompt("malli try cheyyandi.")
+      .withSimpleCard("Chitti - Lopam", errorMessage)
       .getResponse();
   }
 };
 
 /**
- * Skill Initialization
+ * Skill Builder
  */
 const skill = Alexa.SkillBuilders.custom()
   .addRequestHandlers(
@@ -111,7 +113,7 @@ const skill = Alexa.SkillBuilders.custom()
   .create();
 
 /**
- * Alexa POST endpoint
+ * Alexa POST Endpoint
  */
 app.post('/alexa', async (req, res) => {
   const response = await skill.invoke(req.body, req.headers);
@@ -134,14 +136,14 @@ app.get('/usage', (req, res) => {
 });
 
 /**
- * Root Route for Health Check
+ * Root Endpoint
  */
 app.get('/', (req, res) => {
-  res.send('✅ Chitti Alexa + ChatGPT Telugu Translator is live!');
+  res.send('✅ Chitti Alexa + ChatGPT Telugu Translator is LIVE!');
 });
 
 /**
- * Start Express Server
+ * Start Server
  */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`✅ Chitti backend running on port ${PORT}`));
