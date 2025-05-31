@@ -115,12 +115,14 @@ const CancelAndStopIntentHandler = {
 };
 
 const FallbackHandler = {
-  canHandle(handlerInput) {
-    return true;
-  },
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest' &&
+               Alexa.getIntentName(handlerInput.requestEnvelope) === 'AMAZON.FallbackIntent';
+    },
   handle(handlerInput) {
     const msg = "క్షమించండి, నేను ఆ అభ్యర్థనను అర్థం చేసుకోలేను. మళ్ళీ ప్రయత్నించండి.";
     const phonetic = toPhonetic(msg);
+    console.error("⚠️ Alexa triggered FallbackIntent — no intent matched.");
     console.error("🔴 Unmatched Request:", JSON.stringify(handlerInput.requestEnvelope, null, 2));
     return handlerInput.responseBuilder
       .speak(`<speak><lang xml:lang=\"en-IN\">${phonetic}</lang></speak>`)
