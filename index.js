@@ -20,6 +20,27 @@ const ChatIntentHandler = {
       const userInput = Alexa.getSlotValue(handlerInput.requestEnvelope, 'question') || 'హలో';
       console.log("🗣️ User input:", userInput);
 
+      // 🛑 Filter common invocation phrases or junk
+      const blockedPhrases = [
+        'open chitti',
+        'open chitti bot',
+        'start chitti',
+        'launch chitti',
+        'launch chitti bot',
+        'chitti',
+        'chitti bot',
+      ];
+      const cleanedInput = userInput.toLowerCase().trim();
+      if (blockedPhrases.includes(cleanedInput)) {
+        const filteredMsg = "దయచేసి మీరు అడగాలనుకున్న ప్రశ్నను చెప్పండి.";
+        const filteredPhonetic = toPhonetic(filteredMsg);
+        return handlerInput.responseBuilder
+          .speak(`<speak><lang xml:lang="en-IN">${filteredPhonetic}</lang></speak>`)
+          .reprompt("మీరు ఏమి తెలుసుకోవాలనుకుంటున్నారు?")
+          .withSimpleCard("Chitti Bot", filteredMsg)
+          .getResponse();
+      }
+
       const englishInput = await toEnglish(userInput);
       console.log("🌐 Translated to English:", englishInput);
 
@@ -38,23 +59,28 @@ const ChatIntentHandler = {
       );
 
       const englishOutput = gptResponse.data.choices[0].message.content;
+      console.log("🧠 GPT Output:", englishOutput);
+
       const teluguScript = await toTelugu(englishOutput);
+      console.log("🌐 Telugu Translation:", teluguScript);
+
       const phoneticTelugu = toPhonetic(teluguScript);
+      console.log("🗣️ Alexa will speak:", phoneticTelugu);
 
       return handlerInput.responseBuilder
         .speak(`<speak><lang xml:lang="en-IN">${phoneticTelugu}</lang></speak>`)
         .reprompt("inkaa emina adagavacchaa?")
-        .withSimpleCard("Chitti", teluguScript)
+        .withSimpleCard("Chitti Bot", teluguScript)
         .getResponse();
 
     } catch (err) {
       console.error("❌ ChatIntentHandler Error:", err.message);
       const fallback = "క్షమించండి, లోపం సంభవించింది. మళ్ళీ ప్రయత్నించండి.";
-      const fallbackPhonetic = toPhonetic(fallback);
+      const phoneticFallback = toPhonetic(fallback);
       return handlerInput.responseBuilder
-        .speak(`<speak><lang xml:lang="en-IN">${fallbackPhonetic}</lang></speak>`)
-        .reprompt("మళ్ళీ ప్రయత్నించండి.")
-        .withSimpleCard("Chitti - లోపం", fallback)
+        .speak(`<speak><lang xml:lang="en-IN">${phoneticFallback}</lang></speak>`)
+        .reprompt("దయచేసి మళ్ళీ ప్రయత్నించండి.")
+        .withSimpleCard("Chitti Bot - లోపం", fallback)
         .getResponse();
     }
   }
@@ -65,12 +91,12 @@ const LaunchRequestHandler = {
     return Alexa.getRequestType(handlerInput.requestEnvelope) === 'LaunchRequest';
   },
   handle(handlerInput) {
-    const welcome = "హాయ్! నేను చిట్టి. మీరు ఏమి తెలుసుకోవాలనుకుంటున్నారు?";
-    const welcomePhonetic = toPhonetic(welcome);
+    const welcome = "హాయ్! నేను చిట్టి బాట్. మీరు ఏమి తెలుసుకోవాలనుకుంటున్నారు?";
+    const phoneticWelcome = toPhonetic(welcome);
     return handlerInput.responseBuilder
-      .speak(`<speak><lang xml:lang="en-IN">${welcomePhonetic}</lang></speak>`)
+      .speak(`<speak><lang xml:lang="en-IN">${phoneticWelcome}</lang></speak>`)
       .reprompt("మీరు ఏమి అడగాలనుకుంటున్నారు?")
-      .withSimpleCard("Chitti", welcome)
+      .withSimpleCard("Chitti Bot", welcome)
       .getResponse();
   }
 };
@@ -81,12 +107,12 @@ const ErrorHandler = {
   },
   handle(handlerInput, error) {
     console.error("🔥 Global Error:", error.message);
-    const errorMsg = "క్షమించండి, లోపం సంభవించింది.";
-    const errorPhonetic = toPhonetic(errorMsg);
+    const errorMessage = "లోపం సంభవించింది. దయచేసి మళ్ళీ ప్రయత్నించండి.";
+    const errorPhonetic = toPhonetic(errorMessage);
     return handlerInput.responseBuilder
       .speak(`<speak><lang xml:lang="en-IN">${errorPhonetic}</lang></speak>`)
       .reprompt("దయచేసి మళ్ళీ ప్రయత్నించండి.")
-      .withSimpleCard("Chitti - లోపం", errorMsg)
+      .withSimpleCard("Chitti Bot - లోపం", errorMessage)
       .getResponse();
   }
 };
@@ -104,7 +130,7 @@ app.post('/alexa', async (req, res) => {
     const response = await skill.invoke(req.body, req.headers);
     res.json(response);
   } catch (err) {
-    console.error("❌ Alexa POST /alexa error:", err.message);
+    console.error("❌ Alexa Endpoint Error:", err.message);
     res.status(500).send("Internal Server Error");
   }
 });
@@ -122,7 +148,7 @@ app.get('/usage', (req, res) => {
 });
 
 app.get('/', (req, res) => {
-  res.send('✅ Chitti Alexa + ChatGPT Telugu Translator is running!');
+  res.send('✅ Chitti Bot is running with Telugu + ChatGPT support');
 });
 
 const PORT = process.env.PORT || 3000;
