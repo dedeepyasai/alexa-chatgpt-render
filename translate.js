@@ -1,5 +1,5 @@
 const { Translate } = require('@google-cloud/translate').v2;
-const { Lip, ScriptsRegistry } = require('lipitva'); // 👈 Correct imports
+const lip = require('lipitva'); // ✅ Import the default instance (already set up)
 
 const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
 
@@ -9,8 +9,6 @@ const translate = new Translate({
   projectId: credentials.project_id
 });
 
-// ✅ Create instance of Lip class with its registry
-const lip = new Lip(new ScriptsRegistry());
 
 exports.toEnglish = async (text) => {
   const [translated] = await translate.translate(text, 'en');
@@ -23,7 +21,7 @@ exports.toTelugu = async (text) => {
 };
 
 exports.toPhonetic = (teluguText) => {
-  const raw = lip.t({
+  const raw = lip.default.t({
     data: teluguText,
     from: 'telugu',
     to: 'itrans'
