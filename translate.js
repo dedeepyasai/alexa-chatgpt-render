@@ -31,11 +31,20 @@ exports.toPhonetic = (teluguText) => {
 
   // Optional: Alexa-friendly simplification
   return raw
-    .replace(/M/g, 'm')
-    .replace(/D/g, 'd')
-    .replace(/T/g, 't')
-    .replace(/N/g, 'n')
-    .replace(/L/g, 'l')
-    .replace(/CH/g, 'ch')
-    .toLowerCase();
+    .replace(/ā/g, 'aa')
+    .replace(/ī/g, 'ee')
+    .replace(/ū/g, 'oo')
+    .replace(/ṉ/g, 'n')
+    .replace(/ṁ/g, 'm')
+    .replace(/ṭ/g, 't')
+    .replace(/ḍ/g, 'd')
+    .replace(/ṅ/g, 'ng')
+    .replace(/ñ/g, 'ny')
+    .replace(/ś/g, 'sh')
+    .replace(/ṣ/g, 'sh')
+    .replace(/ḥ/g, 'h')
+    .replace(/ṇ/g, 'n')
+    .replace(/[A-Z]/g, (m) => m.toLowerCase()) // Convert remaining uppercase to lowercase
+    .replace(/[^\x00-\x7F]/g, '')              // Remove leftover non-ASCII
+    .trim();
 };
