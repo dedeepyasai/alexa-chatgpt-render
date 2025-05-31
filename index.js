@@ -117,10 +117,29 @@ const ErrorHandler = {
   }
 };
 
+const FallbackHandler = {
+    canHandle(handlerInput) {
+      return true; // 👈 catches all unmatched requests
+    },
+    handle(handlerInput) {
+      const msg = "క్షమించండి, నేను ఆ అభ్యర్థనను అర్థం చేసుకోలేను. మళ్ళీ ప్రయత్నించండి.";
+      const phonetic = toPhonetic(msg);
+  
+      console.error("🔴 Unhandled request:", JSON.stringify(handlerInput.requestEnvelope, null, 2));
+  
+      return handlerInput.responseBuilder
+        .speak(`<speak><lang xml:lang="en-IN">${phonetic}</lang></speak>`)
+        .reprompt("దయచేసి మరో ప్రశ్న అడగండి.")
+        .withSimpleCard("Chitti Bot", msg)
+        .getResponse();
+    }
+  };
+
 const skill = Alexa.SkillBuilders.custom()
   .addRequestHandlers(
     LaunchRequestHandler,
-    ChatIntentHandler
+    ChatIntentHandler,
+    FallbackHandler
   )
   .addErrorHandlers(ErrorHandler)
   .create();
