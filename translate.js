@@ -19,7 +19,7 @@ exports.toTelugu = async (text) => {
 };
 
 exports.toPhonetic = (teluguText) => {
-  return lip.transliterate({
+  return lip.t({
     data: teluguText,
     from: 'telugu',
     to: 'itrans'
