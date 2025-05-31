@@ -18,7 +18,7 @@ const ChatIntentHandler = {
   async handle(handlerInput) {
     try {
       const userInput = Alexa.getSlotValue(handlerInput.requestEnvelope, 'question') || 'హలో';
-      console.log("🎤 User input:", userInput);
+      console.log("🗣️ User input:", userInput);
 
       const englishInput = await toEnglish(userInput);
       console.log("🌐 Translated to English:", englishInput);
@@ -38,19 +38,8 @@ const ChatIntentHandler = {
       );
 
       const englishOutput = gptResponse.data.choices[0].message.content;
-      console.log("🤖 GPT Output:", englishOutput);
-
       const teluguScript = await toTelugu(englishOutput);
-      console.log("🌐 Telugu Translation:", teluguScript);
-
-      let phoneticTelugu;
-      try {
-        phoneticTelugu = toPhonetic(teluguScript);
-        console.log("🗣️ Phonetic Telugu:", phoneticTelugu);
-      } catch (e) {
-        console.error("❌ Transliteration failed:", e.message);
-        phoneticTelugu = "kshaminchandi, nenu telugu lo cheppaleka pothunna.";
-      }
+      const phoneticTelugu = toPhonetic(teluguScript);
 
       return handlerInput.responseBuilder
         .speak(`<speak><lang xml:lang="en-IN">${phoneticTelugu}</lang></speak>`)
@@ -60,18 +49,12 @@ const ChatIntentHandler = {
 
     } catch (err) {
       console.error("❌ ChatIntentHandler Error:", err.message);
-      const fallbackTelugu = "క్షమించండి, లోపం సంభవించింది. మళ్ళీ ప్రయత్నించండి.";
-      let fallbackPhonetic = "kshaminchandi, lopam sambhavinchindi.";
-      try {
-        fallbackPhonetic = toPhonetic(fallbackTelugu);
-      } catch (e) {
-        console.error("❌ Fallback transliteration failed:", e.message);
-      }
-
+      const fallback = "క్షమించండి, లోపం సంభవించింది. మళ్ళీ ప్రయత్నించండి.";
+      const fallbackPhonetic = toPhonetic(fallback);
       return handlerInput.responseBuilder
         .speak(`<speak><lang xml:lang="en-IN">${fallbackPhonetic}</lang></speak>`)
         .reprompt("మళ్ళీ ప్రయత్నించండి.")
-        .withSimpleCard("Chitti - లోపం", fallbackTelugu)
+        .withSimpleCard("Chitti - లోపం", fallback)
         .getResponse();
     }
   }
@@ -82,18 +65,12 @@ const LaunchRequestHandler = {
     return Alexa.getRequestType(handlerInput.requestEnvelope) === 'LaunchRequest';
   },
   handle(handlerInput) {
-    const teluguWelcome = "హాయ్! నేను చిట్టి. మీరు ఏమి తెలుసుకోవాలనుకుంటున్నారు?";
-    let phoneticWelcome = "haayi! nenu chitti. meeru emi telusukovaalanukuntunnaru?";
-    try {
-      phoneticWelcome = toPhonetic(teluguWelcome);
-    } catch (e) {
-      console.error("❌ Welcome transliteration failed:", e.message);
-    }
-
+    const welcome = "హాయ్! నేను చిట్టి. మీరు ఏమి తెలుసుకోవాలనుకుంటున్నారు?";
+    const welcomePhonetic = toPhonetic(welcome);
     return handlerInput.responseBuilder
-      .speak(`<speak><lang xml:lang="en-IN">${phoneticWelcome}</lang></speak>`)
+      .speak(`<speak><lang xml:lang="en-IN">${welcomePhonetic}</lang></speak>`)
       .reprompt("మీరు ఏమి అడగాలనుకుంటున్నారు?")
-      .withSimpleCard("Chitti", teluguWelcome)
+      .withSimpleCard("Chitti", welcome)
       .getResponse();
   }
 };
@@ -103,19 +80,13 @@ const ErrorHandler = {
     return true;
   },
   handle(handlerInput, error) {
-    console.error("🔥 General Error:", error.message);
-    const errorMessage = "క్షమించండి, లోపం సంభవించింది. మళ్ళీ ప్రయత్నించండి.";
-    let phoneticFallback = "kshaminchandi, lopam sambhavinchindi.";
-    try {
-      phoneticFallback = toPhonetic(errorMessage);
-    } catch (e) {
-      console.error("❌ Error fallback transliteration failed:", e.message);
-    }
-
+    console.error("🔥 Global Error:", error.message);
+    const errorMsg = "క్షమించండి, లోపం సంభవించింది.";
+    const errorPhonetic = toPhonetic(errorMsg);
     return handlerInput.responseBuilder
-      .speak(`<speak><lang xml:lang="en-IN">${phoneticFallback}</lang></speak>`)
-      .reprompt("మళ్ళీ ప్రయత్నించండి.")
-      .withSimpleCard("Chitti - లోపం", errorMessage)
+      .speak(`<speak><lang xml:lang="en-IN">${errorPhonetic}</lang></speak>`)
+      .reprompt("దయచేసి మళ్ళీ ప్రయత్నించండి.")
+      .withSimpleCard("Chitti - లోపం", errorMsg)
       .getResponse();
   }
 };
