@@ -1,5 +1,5 @@
 const { Translate } = require('@google-cloud/translate').v2;
-const lipitva = require('lipitva'); // Don't destructure here
+const lip = require('lipitva').default; // 👈 IMPORTANT CHANGE
 
 const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
 
@@ -19,14 +19,7 @@ exports.toTelugu = async (text) => {
 };
 
 exports.toPhonetic = (teluguText) => {
-  if (typeof lipitva.transliterate !== 'function') {
-    console.error("🚫 lipitva.transliterate is undefined!");
-    return "kshaminchandi, lipitva error.";
-  }
-  
-  console.log("💡 lipitva:", lipitva);
-
-  return lipitva.transliterate({
+  return lip.transliterate({
     data: teluguText,
     from: 'telugu',
     to: 'itrans'
