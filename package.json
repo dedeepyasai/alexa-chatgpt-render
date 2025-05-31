@@ -12,6 +12,7 @@
   "author": "datta",
   "license": "ISC",
   "dependencies": {
+    "@google-cloud/translate": "^9.1.0",
     "ask-sdk-core": "^2.14.0",
     "axios": "^1.9.0",
     "body-parser": "^2.2.0",

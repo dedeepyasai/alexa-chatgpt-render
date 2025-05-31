@@ -3,6 +3,8 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const Alexa = require('ask-sdk-core');
 const axios = require('axios');
+const { toEnglish, toTelugu } = require('./translate');
+const { getUsageStats } = require('./usageTracker');
 
 const app = express();
 app.use(bodyParser.json());
@@ -12,28 +14,44 @@ const ChatIntentHandler = {
     return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest' &&
       Alexa.getIntentName(handlerInput.requestEnvelope) === 'ChatIntent';
   },
+
   async handle(handlerInput) {
-    const question = Alexa.getSlotValue(handlerInput.requestEnvelope, 'question') || 'Say something';
-    const response = await axios.post(
-      'https://api.openai.com/v1/chat/completions',
-      {
-        model: "gpt-3.5-turbo",
-        messages: [{ role: "user", content: question }]
-      },
-      {
-        headers: {
-          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-          'Content-Type': 'application/json'
+    try {
+      const userInput = Alexa.getSlotValue(handlerInput.requestEnvelope, 'question') || 'హలో';
+
+      // Step 1: Translate Telugu → English
+      const englishInput = await toEnglish(userInput);
+
+      // Step 2: Get response from ChatGPT
+      const gptResponse = await axios.post(
+        'https://api.openai.com/v1/chat/completions',
+        {
+          model: "gpt-3.5-turbo",
+          messages: [{ role: "user", content: englishInput }]
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+            'Content-Type': 'application/json'
+          }
         }
-      }
-    );
+      );
 
-    const reply = response.data.choices[0].message.content;
+      const englishOutput = gptResponse.data.choices[0].message.content;
 
-    return handlerInput.responseBuilder
-      .speak(reply)
-      .reprompt("Would you like to continue?")
-      .getResponse();
+      // Step 3: Translate English → Telugu
+      const teluguOutput = await toTelugu(englishOutput);
+
+      return handlerInput.responseBuilder
+        .speak(teluguOutput)
+        .reprompt("ఇంకా ఏమైనా అడగాలా?")
+        .getResponse();
+    } catch (err) {
+      console.error("❌ ERROR:", err.message);
+      return handlerInput.responseBuilder
+        .speak("క్షమించండి, ఏదో లోపం జరిగింది.")
+        .getResponse();
+    }
   }
 };
 
@@ -43,7 +61,8 @@ const LaunchRequestHandler = {
   },
   handle(handlerInput) {
     return handlerInput.responseBuilder
-      .speak("Welcome to your ChatGPT voice assistant. Ask me anything.")
+      .speak("హాయ్! మీరు ఏదైనా అడగవచ్చును.")
+      .reprompt("మీరు ఏమి తెలుసుకోవాలనుకుంటున్నారు?")
       .getResponse();
   }
 };
@@ -53,26 +72,45 @@ const ErrorHandler = {
     return true;
   },
   handle(handlerInput, error) {
-    console.error(`Error handled: ${error.message}`);
+    console.error("General Error:", error.message);
     return handlerInput.responseBuilder
-      .speak("Sorry, something went wrong.")
+      .speak("క్షమించండి, లోపం సంభవించింది.")
       .getResponse();
   }
 };
 
 const skill = Alexa.SkillBuilders.custom()
-  .addRequestHandlers(LaunchRequestHandler, ChatIntentHandler)
+  .addRequestHandlers(
+    LaunchRequestHandler,
+    ChatIntentHandler
+  )
   .addErrorHandlers(ErrorHandler)
   .create();
 
+// Alexa Skill endpoint
 app.post('/alexa', async (req, res) => {
   const response = await skill.invoke(req.body, req.headers);
   res.json(response);
 });
 
-app.get('/', (req, res) => {
-    res.send('Alexa ChatGPT backend is running');
+// Usage endpoint
+app.get('/usage', (req, res) => {
+  const stats = getUsageStats();
+  res.json({
+    used_today: stats.today,
+    used_last_7_days: stats.week,
+    used_last_30_days: stats.month,
+    used_last_365_days: stats.year,
+    total_characters: stats.total,
+    free_tier_limit: stats.limit
+  });
 });
 
+// Root check
+app.get('/', (req, res) => {
+  res.send('Alexa ChatGPT with Telugu Translation is running!');
+});
+
+// Start server
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Alexa ChatGPT server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
