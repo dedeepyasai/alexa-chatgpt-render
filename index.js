@@ -5,6 +5,7 @@ const Alexa = require('ask-sdk-core');
 const axios = require('axios');
 const { toEnglish, toTelugu } = require('./translate');
 const { getUsageStats } = require('./usageTracker');
+const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
 
 const app = express();
 app.use(bodyParser.json());
