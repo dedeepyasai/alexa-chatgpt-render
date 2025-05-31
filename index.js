@@ -47,7 +47,7 @@ const ChatIntentHandler = {
 
       // Step 4: Speak and show result
       return handlerInput.responseBuilder
-        .speak(`<speak><lang xml:lang="te-IN">${teluguOutput}</lang></speak>`)
+        .speak(`<speak><lang xml:lang="en-IN">${teluguOutput}</lang></speak>`)
         .reprompt("ఇంకా ఏమైనా అడగాలా?")
         .withSimpleCard("Chitti", teluguOutput)
         .getResponse();
@@ -56,7 +56,7 @@ const ChatIntentHandler = {
       console.error("❌ ChatIntent Error:", err.message);
       const errorMsg = "క్షమించండి, ఏదో లోపం సంభవించింది. దయచేసి మళ్లీ ప్రయత్నించండి.";
       return handlerInput.responseBuilder
-        .speak(`<speak><lang xml:lang="te-IN">${errorMsg}</lang></speak>`)
+        .speak(`<speak><lang xml:lang="en-IN">${errorMsg}</lang></speak>`)
         .reprompt("మరొక ప్రశ్న అడగాలా?")
         .withSimpleCard("Chitti - లోపం", errorMsg)
         .getResponse();
@@ -74,7 +74,7 @@ const LaunchRequestHandler = {
   handle(handlerInput) {
     const message = "హాయ్! నేను చిట్టి. మీరు ఏం తెలుసుకోవాలనుకుంటున్నారు?";
     return handlerInput.responseBuilder
-      .speak(`<speak><lang xml:lang="te-IN">${message}</lang></speak>`)
+      .speak(`<speak><lang xml:lang="en-IN">${message}</lang></speak>`)
       .reprompt("మీరు ఏదైనా అడగవచ్చును.")
       .withSimpleCard("Chitti", message)
       .getResponse();
@@ -92,7 +92,7 @@ const ErrorHandler = {
     console.error("🔥 General Error:", error.message);
     const teluguError = "క్షమించండి, లోపం సంభవించింది. దయచేసి మళ్లీ ప్రయత్నించండి.";
     return handlerInput.responseBuilder
-      .speak(`<speak><lang xml:lang="te-IN">${teluguError}</lang></speak>`)
+      .speak(`<speak><lang xml:lang="en-IN">${teluguError}</lang></speak>`)
       .reprompt("మరొక ప్రశ్న అడగాలా?")
       .withSimpleCard("Chitti - లోపం", teluguError)
       .getResponse();
