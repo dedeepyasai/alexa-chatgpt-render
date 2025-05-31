@@ -17,29 +17,17 @@ const ChatIntentHandler = {
 
   async handle(handlerInput) {
     try {
-      const userInput = Alexa.getSlotValue(handlerInput.requestEnvelope, 'question') || 'హలో';
-      console.log("🗣️ User input:", userInput);
-
-      // 🛑 Filter common invocation phrases or junk
-      const blockedPhrases = [
-        'open chitti',
-        'open chitti bot',
-        'start chitti',
-        'launch chitti',
-        'launch chitti bot',
-        'chitti',
-        'chitti bot',
-      ];
-      const cleanedInput = userInput.toLowerCase().trim();
-      if (blockedPhrases.includes(cleanedInput)) {
-        const filteredMsg = "దయచేసి మీరు అడగాలనుకున్న ప్రశ్నను చెప్పండి.";
-        const filteredPhonetic = toPhonetic(filteredMsg);
+      const userInput = Alexa.getSlotValue(handlerInput.requestEnvelope, 'question');
+      if (!userInput || userInput.trim() === '') {
+        const fallbackMsg = "క్షమించండి, మీరు ఏమి చెప్పాలనుకుంటున్నారో నాకు తెలియలేదు.";
+        const phonetic = toPhonetic(fallbackMsg);
         return handlerInput.responseBuilder
-          .speak(`<speak><lang xml:lang="en-IN">${filteredPhonetic}</lang></speak>`)
-          .reprompt("మీరు ఏమి తెలుసుకోవాలనుకుంటున్నారు?")
-          .withSimpleCard("Chitti Bot", filteredMsg)
+          .speak(`<speak><lang xml:lang=\"en-IN\">${phonetic}</lang></speak>`)
+          .reprompt("దయచేసి మళ్ళీ ప్రశ్న అడగండి.")
           .getResponse();
       }
+
+      console.log("🗣️ User input:", userInput);
 
       const englishInput = await toEnglish(userInput);
       console.log("🌐 Translated to English:", englishInput);
@@ -59,28 +47,24 @@ const ChatIntentHandler = {
       );
 
       const englishOutput = gptResponse.data.choices[0].message.content;
-      console.log("🧠 GPT Output:", englishOutput);
+      console.log("🤖 GPT Output:", englishOutput);
 
       const teluguScript = await toTelugu(englishOutput);
-      console.log("🌐 Telugu Translation:", teluguScript);
-
       const phoneticTelugu = toPhonetic(teluguScript);
-      console.log("🗣️ Alexa will speak:", phoneticTelugu);
 
       return handlerInput.responseBuilder
-        .speak(`<speak><lang xml:lang="en-IN">${phoneticTelugu}</lang></speak>`)
-        .reprompt("inkaa emina adagavacchaa?")
+        .speak(`<speak><lang xml:lang=\"en-IN\">${phoneticTelugu}</lang></speak>`)
+        .reprompt("ఇంకా ఏమైనా అడగాలా?")
         .withSimpleCard("Chitti Bot", teluguScript)
         .getResponse();
-
     } catch (err) {
-      console.error("❌ ChatIntentHandler Error:", err.message);
+      console.error("❌ ChatIntentHandler Error:", err);
       const fallback = "క్షమించండి, లోపం సంభవించింది. మళ్ళీ ప్రయత్నించండి.";
       const phoneticFallback = toPhonetic(fallback);
       return handlerInput.responseBuilder
-        .speak(`<speak><lang xml:lang="en-IN">${phoneticFallback}</lang></speak>`)
+        .speak(`<speak><lang xml:lang=\"en-IN\">${phoneticFallback}</lang></speak>`)
         .reprompt("దయచేసి మళ్ళీ ప్రయత్నించండి.")
-        .withSimpleCard("Chitti Bot - లోపం", fallback)
+        .withSimpleCard("Chitti Bot", fallback)
         .getResponse();
     }
   }
@@ -94,9 +78,54 @@ const LaunchRequestHandler = {
     const welcome = "హాయ్! నేను చిట్టి బాట్. మీరు ఏమి తెలుసుకోవాలనుకుంటున్నారు?";
     const phoneticWelcome = toPhonetic(welcome);
     return handlerInput.responseBuilder
-      .speak(`<speak><lang xml:lang="en-IN">${phoneticWelcome}</lang></speak>`)
+      .speak(`<speak><lang xml:lang=\"en-IN\">${phoneticWelcome}</lang></speak>`)
       .reprompt("మీరు ఏమి అడగాలనుకుంటున్నారు?")
       .withSimpleCard("Chitti Bot", welcome)
+      .getResponse();
+  }
+};
+
+const HelpIntentHandler = {
+  canHandle(handlerInput) {
+    return Alexa.getIntentName(handlerInput.requestEnvelope) === 'AMAZON.HelpIntent';
+  },
+  handle(handlerInput) {
+    const msg = "మీరు అడగాలనుకున్న ప్రశ్నను చెప్పండి.";
+    const phonetic = toPhonetic(msg);
+    return handlerInput.responseBuilder
+      .speak(`<speak><lang xml:lang=\"en-IN\">${phonetic}</lang></speak>`)
+      .reprompt("ఇంకా ఏమైనా అడగాలా?")
+      .withSimpleCard("Chitti Bot Help", msg)
+      .getResponse();
+  }
+};
+
+const CancelAndStopIntentHandler = {
+  canHandle(handlerInput) {
+    return ['AMAZON.CancelIntent', 'AMAZON.StopIntent'].includes(Alexa.getIntentName(handlerInput.requestEnvelope));
+  },
+  handle(handlerInput) {
+    const msg = "ధన్యవాదాలు! మళ్ళీ కలుద్దాం.";
+    const phonetic = toPhonetic(msg);
+    return handlerInput.responseBuilder
+      .speak(`<speak><lang xml:lang=\"en-IN\">${phonetic}</lang></speak>`)
+      .withSimpleCard("Chitti Bot", msg)
+      .getResponse();
+  }
+};
+
+const FallbackHandler = {
+  canHandle(handlerInput) {
+    return true;
+  },
+  handle(handlerInput) {
+    const msg = "క్షమించండి, నేను ఆ అభ్యర్థనను అర్థం చేసుకోలేను. మళ్ళీ ప్రయత్నించండి.";
+    const phonetic = toPhonetic(msg);
+    console.error("🔴 Unmatched Request:", JSON.stringify(handlerInput.requestEnvelope, null, 2));
+    return handlerInput.responseBuilder
+      .speak(`<speak><lang xml:lang=\"en-IN\">${phonetic}</lang></speak>`)
+      .reprompt("దయచేసి మరో ప్రశ్న అడగండి.")
+      .withSimpleCard("Chitti Bot", msg)
       .getResponse();
   }
 };
@@ -106,39 +135,23 @@ const ErrorHandler = {
     return true;
   },
   handle(handlerInput, error) {
-    console.error("🔥 Global Error:", error.message);
+    console.error("🔥 General Error:", error.stack);
     const errorMessage = "లోపం సంభవించింది. దయచేసి మళ్ళీ ప్రయత్నించండి.";
     const errorPhonetic = toPhonetic(errorMessage);
     return handlerInput.responseBuilder
-      .speak(`<speak><lang xml:lang="en-IN">${errorPhonetic}</lang></speak>`)
+      .speak(`<speak><lang xml:lang=\"en-IN\">${errorPhonetic}</lang></speak>`)
       .reprompt("దయచేసి మళ్ళీ ప్రయత్నించండి.")
       .withSimpleCard("Chitti Bot - లోపం", errorMessage)
       .getResponse();
   }
 };
 
-const FallbackHandler = {
-    canHandle(handlerInput) {
-      return true; // 👈 catches all unmatched requests
-    },
-    handle(handlerInput) {
-      const msg = "క్షమించండి, నేను ఆ అభ్యర్థనను అర్థం చేసుకోలేను. మళ్ళీ ప్రయత్నించండి.";
-      const phonetic = toPhonetic(msg);
-  
-      console.error("🔴 Unhandled request:", JSON.stringify(handlerInput.requestEnvelope, null, 2));
-  
-      return handlerInput.responseBuilder
-        .speak(`<speak><lang xml:lang="en-IN">${phonetic}</lang></speak>`)
-        .reprompt("దయచేసి మరో ప్రశ్న అడగండి.")
-        .withSimpleCard("Chitti Bot", msg)
-        .getResponse();
-    }
-  };
-
 const skill = Alexa.SkillBuilders.custom()
   .addRequestHandlers(
     LaunchRequestHandler,
     ChatIntentHandler,
+    HelpIntentHandler,
+    CancelAndStopIntentHandler,
     FallbackHandler
   )
   .addErrorHandlers(ErrorHandler)
@@ -167,7 +180,7 @@ app.get('/usage', (req, res) => {
 });
 
 app.get('/', (req, res) => {
-  res.send('✅ Chitti Bot is running with Telugu + ChatGPT support');
+  res.send('✅ Chitti Bot is live with multilingual support!');
 });
 
 const PORT = process.env.PORT || 3000;
