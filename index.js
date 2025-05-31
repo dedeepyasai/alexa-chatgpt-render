@@ -12,49 +12,52 @@ app.use(bodyParser.json());
 const ChatIntentHandler = {
   canHandle(handlerInput) {
     return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest' &&
-           Alexa.getIntentName(handlerInput.requestEnvelope) === 'ChatIntent';
+      Alexa.getIntentName(handlerInput.requestEnvelope) === 'ChatIntent';
   },
 
   async handle(handlerInput) {
     try {
       const userInput = Alexa.getSlotValue(handlerInput.requestEnvelope, 'question') || 'హలో';
-      console.log("🗣️ User input:", userInput);
+      console.log('🗣️ User input:', userInput);
 
       const englishInput = await toEnglish(userInput);
-      console.log("🌐 Translated to English:", englishInput);
+      console.log('🌐 Translated to English:', englishInput);
 
       const gptResponse = await axios.post(
         'https://api.openai.com/v1/chat/completions',
         {
-          model: 'gpt-3.5-turbo',
-          messages: [{ role: 'user', content: englishInput }]
+          model: "gpt-3.5-turbo",
+          messages: [{ role: "user", content: englishInput }]
         },
         {
           headers: {
-            Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
             'Content-Type': 'application/json'
           }
         }
       );
 
       const englishOutput = gptResponse.data.choices[0].message.content;
-      console.log("🧠 GPT Output:", englishOutput);
+      console.log('🤖 GPT Output:', englishOutput);
 
       const teluguOutput = await toTelugu(englishOutput);
-      console.log("🌐 Telugu Translation:", teluguOutput);
+      console.log('🌐 Telugu Translation:', teluguOutput);
 
-      const phoneticOutput = toPhonetic(teluguOutput);
-      console.log("🔊 Alexa will speak:", phoneticOutput);
+      const phonetic = toPhonetic(teluguOutput);
+      console.log('🗣️ Alexa will speak:', phonetic);
 
       return handlerInput.responseBuilder
-        .speak(`<speak><lang xml:lang='en-IN'>${phoneticOutput}</lang></speak>`)
-        .reprompt('<speak>inkaa emina adagavacchaa?</speak>')
-        .withSimpleCard("Chitti Bot", teluguOutput)
+        .speak(`<speak><lang xml:lang='en-IN'>${phonetic}</lang></speak>`)
+        .reprompt("<speak>inkaa emina adagavacchaa?</speak>")
+        .withSimpleCard("Teddy Bot", teluguOutput)
         .getResponse();
+
     } catch (err) {
       console.error("🔥 General Error:", err);
       return handlerInput.responseBuilder
-        .speak("<speak><lang xml:lang='en-IN'>kshamimchamdi, edo tappu jarigindi.</lang></speak>")
+        .speak("<speak><lang xml:lang='en-IN'>kshamimchamdi, nenu a abhyarthananu artham chesukolenu. malli prayatnimchamdi.</lang></speak>")
+        .withSimpleCard("Teddy Bot", "క్షమించండి, నేను ఆ అభ్యర్థనను అర్థం చేసుకోలేను. మళ్ళీ ప్రయత్నించండి.")
+        .reprompt("<speak>దయచేసి మరో ప్రశ్న అడగండి.</speak>")
         .getResponse();
     }
   }
@@ -65,38 +68,11 @@ const LaunchRequestHandler = {
     return Alexa.getRequestType(handlerInput.requestEnvelope) === 'LaunchRequest';
   },
   handle(handlerInput) {
-    const welcome = "hAy! nenu chiTTi. mIru emi ta\u1ccdlusukovAlanukuMTunnAru?";
     return handlerInput.responseBuilder
-      .speak(`<speak><lang xml:lang='en-IN'>${welcome}</lang></speak>`)
-      .reprompt('inka emina adagavacchaa?')
-      .withSimpleCard("Chitti Bot", "హాయ్! నేను చిట్టి. మీరు ఏమి తెలుసుకోవాలనుకుంటున్నారు?")
+      .speak("<speak><lang xml:lang='en-IN'>hAy! nenu TeDDI bOT. mIru emi taelusukovaalanukuntunnAru?</lang></speak>")
+      .reprompt("<speak>inkaa emina adagavacchaa?</speak>")
+      .withSimpleCard("Teddy Bot", "హాయ్! నేను టెడ్డీ బాట్. మీరు ఏం తెలుసుకోవాలనుకుంటున్నారు?")
       .getResponse();
-  }
-};
-
-const FallbackHandler = {
-  canHandle(handlerInput) {
-    return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest' &&
-           Alexa.getIntentName(handlerInput.requestEnvelope) === 'AMAZON.FallbackIntent';
-  },
-  handle(handlerInput) {
-    console.warn("⚠️ Alexa triggered FallbackIntent — no intent matched.");
-    console.log("🔴 Unmatched Request:", JSON.stringify(handlerInput.requestEnvelope, null, 2));
-    return handlerInput.responseBuilder
-      .speak("<speak><lang xml:lang='en-IN'>kshamimchamdi, nenu a abhyarthananu artham chesukolenu. malli prayatnimchamdi.</lang></speak>")
-      .reprompt('<speak>dayachesi maro prashna adagandi.</speak>')
-      .withSimpleCard("Chitti Bot", "క్షమించండి, నేను ఆ అభ్యర్థనను అర్థం చేసుకోలేను. మళ్ళీ ప్రయత్నించండి.")
-      .getResponse();
-  }
-};
-
-const SessionEndedRequestHandler = {
-  canHandle(handlerInput) {
-    return Alexa.getRequestType(handlerInput.requestEnvelope) === 'SessionEndedRequest';
-  },
-  handle(handlerInput) {
-    console.log(`🔚 Session ended: ${JSON.stringify(handlerInput.requestEnvelope.request.reason)}`);
-    return handlerInput.responseBuilder.getResponse();
   }
 };
 
@@ -105,9 +81,10 @@ const ErrorHandler = {
     return true;
   },
   handle(handlerInput, error) {
-    console.error("❌ Global Error:", error);
+    console.error("❌ ERROR:", error.message);
     return handlerInput.responseBuilder
-      .speak("<speak><lang xml:lang='en-IN'>kshamimchamdi, tappu jarigindi.</lang></speak>")
+      .speak("<speak><lang xml:lang='en-IN'>kshamimchamdi, lOpam sambhavinchindi.</lang></speak>")
+      .withSimpleCard("Teddy Bot", "క్షమించండి, లోపం సంభవించింది.")
       .getResponse();
   }
 };
@@ -115,20 +92,16 @@ const ErrorHandler = {
 const skill = Alexa.SkillBuilders.custom()
   .addRequestHandlers(
     LaunchRequestHandler,
-    ChatIntentHandler,
-    FallbackHandler,
-    SessionEndedRequestHandler
+    ChatIntentHandler
   )
   .addErrorHandlers(ErrorHandler)
   .create();
 
-// Alexa Skill endpoint
 app.post('/alexa', async (req, res) => {
   const response = await skill.invoke(req.body, req.headers);
   res.json(response);
 });
 
-// Usage endpoint
 app.get('/usage', (req, res) => {
   const stats = getUsageStats();
   res.json({
@@ -141,11 +114,9 @@ app.get('/usage', (req, res) => {
   });
 });
 
-// Root check
 app.get('/', (req, res) => {
-  res.send('Chitti Alexa Skill backend is running!');
+  res.send('Teddy Bot Alexa ChatGPT is live!');
 });
 
-// Start server
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`✅ Chitti backend running on port ${PORT}`));
+app.listen(PORT, () => console.log(`✅ Teddy Bot backend running on port ${PORT}`));
